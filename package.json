@@ -1,0 +1,15 @@
+{
+  "name": "minitrigger",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker compose up -d --wait && npm run dev:server",
+    "deps:up": "docker compose up -d --wait",
+    "deps:down": "docker compose down",
+    "dev:server": "npm run dev --workspace=@minitrigger/server",
+    "start:server": "npm run start --workspace=@minitrigger/server"
+  }
+}
