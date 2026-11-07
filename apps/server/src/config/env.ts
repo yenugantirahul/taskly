@@ -7,6 +7,9 @@ const envSchema = z.object({
   HOST: z.string(),
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
   DATABASE_URL: z.string().url(),
+  APP_URL: z.string().url(),
+  SMTP_URL: z.string().url(),
+  EMAIL_FROM: z.string().min(1),
 });
 
 const parsed = envSchema.safeParse(process.env);

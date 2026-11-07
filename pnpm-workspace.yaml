@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+ignoreWorkspaceRootCheck: true
+
+allowBuilds:
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
