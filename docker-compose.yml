@@ -17,5 +17,18 @@ services:
       timeout: 3s
       retries: 15
 
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: minitrigger-mail
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP (SMTP_URL in apps/server/.env)
+      - "8025:8025" # Web UI: http://localhost:8025
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
 volumes:
   pgdata:

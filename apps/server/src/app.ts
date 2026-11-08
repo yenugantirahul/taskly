@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import { authRouter } from "./routes/auth.routes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 export async function createApp(): Promise<Express> {
   const app = express();
 
@@ -14,6 +15,8 @@ export async function createApp(): Promise<Express> {
   });
 
   app.use("/api/auth", authRouter);
+
+  app.use(errorHandler);
 
   return app;
 }

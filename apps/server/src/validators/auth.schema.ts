@@ -12,9 +12,13 @@ export const loginSchema = z.object({
   password: z.string().min(8).max(128),
 })
 
+
+
 export type LoginSchema = z.infer<typeof loginSchema>;
 
 
-
+export const verifyEmailSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid token"),
+});
 
 export type RegisterInput = z.infer<typeof registerschema>;

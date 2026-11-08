@@ -3,11 +3,11 @@
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "dev": "docker compose up -d --wait && turbo run dev",
-    "build": "turbo run build",
-    "start": "turbo run start",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
+    "dev": "docker compose up -d --wait && turbo --skip-infer run dev --no-update-notifier",
+    "build": "turbo --skip-infer run build",
+    "start": "turbo --skip-infer run start",
+    "lint": "turbo --skip-infer run lint",
+    "typecheck": "turbo --skip-infer run typecheck",
     "deps:up": "docker compose up -d --wait",
     "deps:down": "docker compose down"
   },

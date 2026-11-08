@@ -8,7 +8,7 @@ export async function sendVerificationEmail(to: string, token: string) {
     await transporter.sendMail({
         from: env.EMAIL_FROM,
         to,
-        subject: "Verify your email",
+        subject: "Taskly: Verify your email",
         text: `Confirm your email by opening this link: ${link}`,
         html: `<p><a href="${link}">Verify your email</a></p>`,
     });
