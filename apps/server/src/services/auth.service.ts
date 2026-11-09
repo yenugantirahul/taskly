@@ -1,15 +1,20 @@
 import { db } from "../db/index.js";
-import { users, passwordCredentials, emailVerificationTokens } from "../db/schema.js";
+import { users, passwordCredentials, emailVerificationTokens } from "../db/schema/index.js";
 import { AppError } from "../utils/AppError.js";
 import { generateToken, hashToken } from "../utils/Auth.js";
-import { RegisterInput } from "../validators/auth.schema.js";
+import { LoginInput, RegisterInput } from "../validators/auth.schema.js";
 import { hash } from "@node-rs/argon2"; // or bcrypt
 import { sendVerificationEmail } from "./email.service.js";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { RegisterResult } from "../types/auth.types.js";
+import { verify } from "@node-rs/argon2";
+import { createSession } from "./session.service.js";
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export async function registerUser(input: RegisterInput) {
+
+
+export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
   const passwordHash = await hash(input.password);
   const token = generateToken();
 
@@ -140,3 +145,39 @@ export async function verifyEmail(token: string): Promise<void> {
   });
 }
 
+
+
+export async function login(input: LoginInput) {
+  const [user] = await db.select().from(users).where(eq(users.email, input.email));
+  if (!user) {
+    throw new AppError(
+      400,
+      "EMAIL_INVALID",
+      "User with this email does not exists",
+    );
+  }
+
+  const [credentials] = await db.select()
+    .from(passwordCredentials)
+    .where(eq(passwordCredentials.userId, user.id)).limit(1)
+
+
+  if (!credentials || !(await verify(credentials.passwordHash, input.password))) {
+    throw new AppError(
+      401,
+      "INVALID_CREDENTIALS",
+      "Invalid email or password",
+    );
+  }
+
+  const session = await createSession(user.id)
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    },
+    session,
+  }
+}
