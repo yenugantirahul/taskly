@@ -2,6 +2,10 @@ import type { Request, Response } from "express";
 import * as authService from "../services/auth.service.js";
 import { env } from "../config/env.js";
 
+export function me(req: Request, res: Response) {
+  res.status(200).json({ data: req.user });
+}
+
 export async function register(req: Request, res: Response) {
   const user = await authService.registerUser(req.body);
   res.status(201).json({ data: user });

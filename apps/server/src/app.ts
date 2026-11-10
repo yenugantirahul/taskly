@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 export async function createApp(): Promise<Express> {
@@ -8,6 +9,7 @@ export async function createApp(): Promise<Express> {
   app.disable("x-powered-by");
 
   app.use(express.json({ limit: "1mb" }));
+  app.use(cookieParser());
 
   // Liveness probe — answers as long as the process is up
   app.get("/server/ping", (_req, res) => {
