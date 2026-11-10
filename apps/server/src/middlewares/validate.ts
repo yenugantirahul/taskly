@@ -17,3 +17,16 @@ export const validate =
       req.body = result.data;
       next();
     };
+
+// Validates URL params like /projects/:id. A bad param means the resource
+// can't exist, so it answers 404 rather than leaking validation details.
+export const validateParams =
+  (schema: ZodType<Record<string, string>>): RequestHandler =>
+    (req, _res, next) => {
+      const result = schema.safeParse(req.params);
+      if (!result.success) {
+        throw new AppError(404, "NOT_FOUND", "Not found");
+      }
+      req.params = result.data;
+      next();
+    };
