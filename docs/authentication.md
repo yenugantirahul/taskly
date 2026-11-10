@@ -1,6 +1,6 @@
 # Authentication internals
 
-The server uses Express, Zod, Drizzle ORM, and PostgreSQL. Passwords use Argon2; sessions use opaque random tokens. This guide describes the current implementation, including the unfinished login behavior.
+The server uses Express, Zod, Drizzle ORM, and PostgreSQL. Passwords use Argon2; sessions use opaque random tokens.
 
 ## Request path
 
@@ -104,13 +104,20 @@ After a valid password, `createSession(user.id)` generates a fresh token and ins
 
 Both session and verification tokens use 32 random bytes encoded as base64url. Only their SHA-256 hashes are stored in the database; raw tokens go to the browser or verification email. Password hashes use Argon2 separately.
 
-The login controller prepares a `session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, the session expiry, and `Secure` in production.
+The login controller sets a `session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, the session expiry, and `Secure` in production, then returns `{ data: { id, name, email } }`.
+
+### Current user
+
+`GET /api/auth/me` returns `{ data: { id, name, email } }` for an authenticated user and `401 UNAUTHORIZED` otherwise. Responses use `Cache-Control: no-store`.
+
+Cookie parsing runs before the routes. The reusable `middlewares/requireAuth.ts` middleware reads the HttpOnly `session` cookie, validates its token format, and hashes it to look up the session and its user. Missing, expired, revoked, or unknown sessions and inactive users are rejected. Successful requests have a typed `req.user` for downstream handlers.
+
+The browser sends the cookie automatically for same-origin requests; frontend fetch calls can explicitly use `credentials: "include"`. The raw token is never returned by `/me`.
 
 ### Current implementation gaps
 
 - Login does not check `isActive` or `emailVerifiedAt` before creating a session.
-- The login controller calls `res.cookie()` but never sends or ends the response. The request remains open; the cookie header is only prepared.
-- Session cookie parsing, authenticated-request lookup, logout/revocation, and expiry cleanup are not implemented. `lastActiveAt` is only initialized; `userAgent` is not populated.
+- Logout/revocation endpoints and expiry cleanup are not implemented. `lastActiveAt` is only initialized; `userAgent` is not populated.
 
 ## Errors
 
