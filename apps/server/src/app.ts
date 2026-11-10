@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth.routes.js";
+import { projectsRouter } from "./routes/projects.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 export async function createApp(): Promise<Express> {
   const app = express();
@@ -17,6 +18,7 @@ export async function createApp(): Promise<Express> {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/projects", projectsRouter);
 
   app.use(errorHandler);
 

@@ -34,6 +34,11 @@ export const projectIdParamSchema = z.object({
   id: z.uuid(),
 });
 
+export const projectSlugParamSchema = z.object({
+  slug: slugSchema,
+});
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type ProjectIdParam = z.infer<typeof projectIdParamSchema>;
+export type ProjectSlugParam = z.infer<typeof projectSlugParamSchema>;

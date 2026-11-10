@@ -1,3 +1,7 @@
 import { projects } from "../db/schema/project.js";
 
-export type CreateProjectResult = Pick<typeof projects.$inferSelect, "id" | "name" | "slug">
+// What the API returns for a project. ownerId is left out: it's always the caller.
+export type ProjectResult = Pick<
+    typeof projects.$inferSelect,
+    "id" | "name" | "slug" | "createdAt" | "updatedAt"
+>;
