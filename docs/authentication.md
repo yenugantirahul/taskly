@@ -98,13 +98,13 @@ sequenceDiagram
 
 ## Login and sessions
 
-`POST /api/auth/login` validates input, finds the user by email, loads password credentials, and calls `verify(storedHash, input.password)`. A missing user currently returns `400 EMAIL_INVALID`; missing credentials or a wrong password returns `401 INVALID_CREDENTIALS`.
+`POST /api/auth/login` validates input, finds the user by case-insensitive email together with their password credentials, and calls `verify(storedHash, input.password)`. An unknown email, missing credentials, a wrong password and an inactive account all return the same `401 INVALID_CREDENTIALS`; an unknown email is still checked against a dummy Argon2 hash so response timing does not reveal which emails are registered. Only after the password is proven correct does an unverified account get `403 EMAIL_NOT_VERIFIED`.
 
-After a valid password, `createSession(user.id)` generates a fresh token and inserts its SHA-256 hash with a seven-day expiry. The service returns `{ user: { id, name, email }, session: { token, expiresAt } }` to the controller.
+After a valid password, `createSession(user.id, userAgent)` generates a fresh token and inserts its SHA-256 hash, the request User-Agent, and a seven-day expiry. The service returns `{ user: { id, name, email }, session: { token, expiresAt } }` to the controller.
 
 Both session and verification tokens use 32 random bytes encoded as base64url. Only their SHA-256 hashes are stored in the database; raw tokens go to the browser or verification email. Password hashes use Argon2 separately.
 
-The login controller sets a `session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, the session expiry, and `Secure` in production, then returns `{ data: { id, name, email } }`.
+The login controller sets a `session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` in production, and the session expiry when the body has `remember: true` (otherwise it is a browser-session cookie), then returns `{ data: { id, name, email } }`.
 
 ### Current user
 
@@ -114,10 +114,22 @@ Cookie parsing runs before the routes. The reusable `middlewares/requireAuth.ts`
 
 The browser sends the cookie automatically for same-origin requests; frontend fetch calls can explicitly use `credentials: "include"`. The raw token is never returned by `/me`.
 
+### Logout
+
+`POST /api/auth/logout` sets `revoked_at` on the session matching the cookie, so the token stops working even if a copy survives, and clears the cookie. It always answers `204`, including for a missing or unknown cookie.
+
+### CSRF
+
+`middlewares/verifyOrigin.ts` runs on every `/api` route. Requests other than GET/HEAD/OPTIONS whose `Origin` header is present but differs from `APP_URL` get `403 FORBIDDEN_ORIGIN`. Requests without an `Origin` (non-browser clients) pass. This sits on top of `SameSite=Lax` and also covers sibling subdomains, which SameSite treats as same-site.
+
+### Frontend
+
+The Next.js client calls same-origin `/api/*`, which `next.config.ts` rewrites to the Express server (`API_URL`, default `http://localhost:5000`). The session cookie therefore stays first-party, the API needs no CORS, and no token is ever readable from JavaScript. `proxy.ts` does optimistic redirects only (`/dashboard` without a cookie → `/`, `/` with one → `/dashboard`); the API remains the authority, and the dashboard calls logout and returns to `/` on any `401`.
+
 ### Current implementation gaps
 
-- Login does not check `isActive` or `emailVerifiedAt` before creating a session.
-- Logout/revocation endpoints and expiry cleanup are not implemented. `lastActiveAt` is only initialized; `userAgent` is not populated.
+- Expired/revoked session cleanup is not implemented, and `lastActiveAt` is only initialized.
+- There is no login rate limiting or account lockout yet.
 
 ## Errors
 

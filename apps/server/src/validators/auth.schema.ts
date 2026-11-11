@@ -9,9 +9,8 @@ export const registerschema = z.object({
 export const loginSchema = z.object({
   email: z.string().toLowerCase().pipe(z.email()),
   password: z.string().min(8).max(128),
+  remember: z.boolean().default(false),
 });
-
-
 
 export const verifyEmailSchema = z.object({
   token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid token"),

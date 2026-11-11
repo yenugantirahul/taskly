@@ -10,6 +10,8 @@ const envSchema = z.object({
   APP_URL: z.string().url(),
   SMTP_URL: z.string().url(),
   EMAIL_FROM: z.string().min(1),
+  // Optional: when unset (e.g. in tests), caching is turned off.
+  REDIS_URL: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

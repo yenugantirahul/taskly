@@ -1,6 +1,15 @@
-import { pgTable, uuid, text, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './auth.js';
+
+// Kept in sync with PROJECT_TYPES in validators/project.schema.ts.
+export const projectType = pgEnum('project_type', [
+    'software',
+    'marketing',
+    'design',
+    'operations',
+    'personal',
+]);
 
 export const projects = pgTable(
     'project',
@@ -11,6 +20,8 @@ export const projects = pgTable(
             .references(() => users.id),
         name: text('name').notNull(),
         slug: text('slug').notNull(),
+        // Existing rows predate project types; they become "software".
+        type: projectType('type').default('software').notNull(),
         createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
         updatedAt: timestamp('updated_at', { mode: 'date' })
             .defaultNow()

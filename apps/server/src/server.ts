@@ -2,6 +2,7 @@ import http from "node:http";
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { checkDbConnection, closeDbConnection } from "./db/index.js";
+import { closeRedis, connectRedis } from "./cache/redis.js";
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 export async function createServer(): Promise<http.Server> {
@@ -25,6 +26,7 @@ export async function startServer(): Promise<void> {
   const port = env.PORT;
   await checkDbConnection();
   console.log("Connected to database");
+  await connectRedis();
 
   server
     .listen(port, host)
@@ -51,13 +53,10 @@ function registerShutdown(server: http.Server): void {
 
     // Stop accepting new connections; resolves once in-flight requests finish
     server.close(async (err) => {
-      try {
-        await closeDbConnection();
-        process.exit(err ? 1 : 0);
-      } catch (dbError) {
-        console.error("Failed to close database pool", dbError);
-        process.exit(1);
-      }
+      const results = await Promise.allSettled([closeDbConnection(), closeRedis()]);
+      const failed = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      for (const f of failed) console.error("Failed to close connection", f.reason);
+      process.exit(err || failed.length ? 1 : 0);
     });
     server.closeIdleConnections();
 
