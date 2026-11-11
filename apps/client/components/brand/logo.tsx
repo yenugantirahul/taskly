@@ -10,16 +10,20 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
+export function LogoBadge({ className }: { className?: string }) {
+  return (
+    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white", className)}>
+      <LogoMark className="size-4.5" />
+    </span>
+  );
+}
+
 export function Logo({ className }: { className?: string }) {
   return (
-    <div aria-label="MiniTrigger" className={cn("flex items-center gap-2.5", className)} role="img">
-      <span className="grid size-8 place-items-center rounded-lg bg-linear-to-br from-[#ff7a35] to-[#e0531a] text-[#fffefa] shadow-[0_2px_8px_rgba(242,101,34,0.3),inset_0_1px_0_rgba(255,255,255,0.25)]">
-        <LogoMark className="size-5" />
-      </span>
-      {/* Wordmark: editorial serif "Mini" against a tight, heavy sans "Trigger" */}
-      <span aria-hidden="true" className="flex items-baseline text-[19px] leading-none">
-        <span className="font-serif text-[1.2em] tracking-[-0.01em] text-brand-strong italic pr-[0.08em]">Mini</span>
-        <span className="font-semibold tracking-[-0.045em]">Trigger</span>
+    <div aria-label="MiniTrigger" className={cn("flex items-center gap-2", className)} role="img">
+      <LogoBadge className="size-7" />
+      <span aria-hidden="true" className="text-[15px] font-semibold tracking-tight">
+        MiniTrigger
       </span>
     </div>
   );

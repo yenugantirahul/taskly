@@ -36,9 +36,9 @@ function AuthPanel({ active, mode, children }: { active: boolean; mode: AuthMode
 
 function PanelHeader({ mode }: { mode: AuthMode }) {
   return (
-    <div className="mb-7">
-      <h2 className="text-2xl font-medium tracking-[-0.03em]">{copy[mode].title}</h2>
-      <p className="mt-1.5 text-sm text-muted-foreground">{copy[mode].description}</p>
+    <div className="mb-6">
+      <h2 className="text-xl font-semibold tracking-tight">{copy[mode].title}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{copy[mode].description}</p>
     </div>
   );
 }
@@ -49,14 +49,14 @@ export function AuthCard() {
   const [email, setEmail] = useState("");
 
   return (
-    <div className="w-full max-w-105">
-      <div className="rounded-2xl bg-card p-6 shadow-[0_1px_2px_rgba(12,12,11,0.04),0_16px_40px_-12px_rgba(12,12,11,0.1)] ring-1 ring-border sm:p-8">
+    <div className="w-full max-w-sm">
+      <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
         <Tabs onValueChange={(value) => setMode(value as AuthMode)} value={mode}>
-          <TabsList className="mb-8 h-9! w-full rounded-lg bg-muted p-1">
-            <TabsTrigger aria-controls="auth-panel-login" className="rounded-md text-[13px] data-active:shadow-xs" id="auth-tab-login" value="login">
+          <TabsList className="mb-6 w-full">
+            <TabsTrigger aria-controls="auth-panel-login" id="auth-tab-login" value="login">
               Log in
             </TabsTrigger>
-            <TabsTrigger aria-controls="auth-panel-signup" className="rounded-md text-[13px] data-active:shadow-xs" id="auth-tab-signup" value="signup">
+            <TabsTrigger aria-controls="auth-panel-signup" id="auth-tab-signup" value="signup">
               Sign up
             </TabsTrigger>
           </TabsList>
@@ -77,7 +77,7 @@ export function AuthCard() {
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "signup" ? "Already have an account?" : "New to MiniTrigger?"}{" "}
         <button
-          className="font-medium text-foreground underline decoration-input underline-offset-4 transition-colors hover:decoration-foreground"
+          className="font-medium text-foreground underline underline-offset-4"
           onClick={() => setMode(mode === "signup" ? "login" : "signup")}
           type="button"
         >
