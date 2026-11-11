@@ -8,7 +8,7 @@ import { sendVerificationEmail } from "./email.service.js";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { RegisterResult } from "../types/auth.types.js";
 import { verify } from "@node-rs/argon2";
-import { createSession } from "./session.service.js";
+import { createSession, revokeSession } from "./session.service.js";
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -147,37 +147,63 @@ export async function verifyEmail(token: string): Promise<void> {
 
 
 
-export async function login(input: LoginInput) {
-  const [user] = await db.select().from(users).where(eq(users.email, input.email));
-  if (!user) {
+// Hash compared against when the email is unknown, so a missing account takes
+// as long to reject as a wrong password and response timing can't reveal
+// which emails are registered.
+// Computed on first use so importing this module stays cheap.
+let dummyPasswordHash: Promise<string> | undefined;
+function getDummyPasswordHash(): Promise<string> {
+  return (dummyPasswordHash ??= hash(generateToken()));
+}
+
+function invalidCredentials(): AppError {
+  return new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password");
+}
+
+export async function login(input: LoginInput, meta: { userAgent?: string } = {}) {
+  const [account] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      isActive: users.isActive,
+      emailVerifiedAt: users.emailVerifiedAt,
+      passwordHash: passwordCredentials.passwordHash,
+    })
+    .from(users)
+    .leftJoin(passwordCredentials, eq(passwordCredentials.userId, users.id))
+    .where(eq(sql`lower(${users.email})`, input.email.toLowerCase()))
+    .limit(1);
+
+  let passwordOk = false;
+  if (account?.passwordHash) {
+    passwordOk = await verify(account.passwordHash, input.password);
+  } else {
+    await verify(await getDummyPasswordHash(), input.password);
+  }
+
+  // Unknown email, missing credentials and wrong password all look the same.
+  if (!account || !passwordOk || !account.isActive) {
+    throw invalidCredentials();
+  }
+
+  // Only reveal verification status once the password is proven correct.
+  if (!account.emailVerifiedAt) {
     throw new AppError(
-      400,
-      "EMAIL_INVALID",
-      "User with this email does not exists",
+      403,
+      "EMAIL_NOT_VERIFIED",
+      "Please verify your email before signing in. Check your inbox for the link.",
     );
   }
 
-  const [credentials] = await db.select()
-    .from(passwordCredentials)
-    .where(eq(passwordCredentials.userId, user.id)).limit(1)
-
-
-  if (!credentials || !(await verify(credentials.passwordHash, input.password))) {
-    throw new AppError(
-      401,
-      "INVALID_CREDENTIALS",
-      "Invalid email or password",
-    );
-  }
-
-  const session = await createSession(user.id)
+  const session = await createSession(account.id, meta.userAgent);
 
   return {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email
-    },
+    user: { id: account.id, name: account.name, email: account.email },
     session,
-  }
+  };
+}
+
+export async function logout(token: string): Promise<void> {
+  await revokeSession(token);
 }

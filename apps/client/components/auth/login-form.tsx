@@ -1,10 +1,13 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
 import { CheckboxField } from "@/components/auth/checkbox-field";
 import { FormField } from "@/components/auth/form-field";
+import { FormMessage } from "@/components/auth/form-message";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { ApiError, post } from "@/lib/api";
 
 type LoginFormProps = {
   email: string;
@@ -12,12 +15,35 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ email, onEmailChange }: LoginFormProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
+    const form = new FormData(event.currentTarget);
+
+    setPending(true);
+    setError(null);
+    try {
+      await post("/auth/login", {
+        email,
+        password: form.get("password"),
+        remember: form.get("remember") === "on",
+      });
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof ApiError && err.code !== "VALIDATION_ERROR"
+        ? err.message
+        : "Invalid email or password");
+      setPending(false);
+    }
   }
 
   return (
-    <form className="grid gap-5" onSubmit={handleSubmit}>
+    <form className="grid gap-4" onSubmit={handleSubmit}>
+      {error && <FormMessage>{error}</FormMessage>}
       <FormField
         autoComplete="email"
         id="login-email"
@@ -31,7 +57,7 @@ export function LoginForm({ email, onEmailChange }: LoginFormProps) {
       />
       <FormField
         action={
-          <a className="text-[13px] font-medium text-brand-strong hover:text-brand" href="#forgot-password">
+          <a className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline" href="#forgot-password">
             Forgot password?
           </a>
         }
@@ -44,7 +70,7 @@ export function LoginForm({ email, onEmailChange }: LoginFormProps) {
         type="password"
       />
       <CheckboxField name="remember">Keep me signed in on this device</CheckboxField>
-      <SubmitButton>Log in</SubmitButton>
+      <SubmitButton pending={pending}>Log in</SubmitButton>
     </form>
   );
 }

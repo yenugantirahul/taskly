@@ -11,6 +11,7 @@ const projectColumns = {
     id: projects.id,
     name: projects.name,
     slug: projects.slug,
+    type: projects.type,
     createdAt: projects.createdAt,
     updatedAt: projects.updatedAt,
 };
@@ -56,7 +57,7 @@ export async function createProject(
         try {
             const [project] = await db
                 .insert(projects)
-                .values({ name: input.name, slug, ownerId })
+                .values({ name: input.name, type: input.type, slug, ownerId })
                 .returning(projectColumns);
 
             return project;

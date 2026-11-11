@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth.routes.js";
 import { projectsRouter } from "./routes/projects.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { verifyOrigin } from "./middlewares/verifyOrigin.js";
 export async function createApp(): Promise<Express> {
   const app = express();
 
@@ -11,6 +12,7 @@ export async function createApp(): Promise<Express> {
 
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
+  app.use("/api", verifyOrigin);
 
   // Liveness probe — answers as long as the process is up
   app.get("/server/ping", (_req, res) => {

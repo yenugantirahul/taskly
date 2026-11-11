@@ -30,5 +30,19 @@ services:
       timeout: 3s
       retries: 15
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: minitrigger-redis
+    restart: unless-stopped
+    # Cache only: nothing is written to disk
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6380:6379" # 6380 on the host: 6379 is often taken by other projects (REDIS_URL in apps/server/.env)
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
 volumes:
   pgdata:

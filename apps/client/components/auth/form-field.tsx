@@ -17,7 +17,7 @@ export function FormField({ id, label, action, ...inputProps }: FormFieldProps) 
         <Label htmlFor={id}>{label}</Label>
         {action}
       </div>
-      <Input className="h-10 bg-card px-3 shadow-xs" id={id} {...inputProps} />
+      <Input id={id} {...inputProps} />
     </div>
   );
 }

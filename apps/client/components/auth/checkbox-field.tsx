@@ -10,7 +10,7 @@ type CheckboxFieldProps = {
 
 export function CheckboxField({ name, required, children }: CheckboxFieldProps) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-5 text-muted-foreground">
+    <label className="flex cursor-pointer items-start gap-2.5 text-sm leading-5 text-muted-foreground">
       <Checkbox className="mt-0.5" name={name} required={required} />
       <span>{children}</span>
     </label>

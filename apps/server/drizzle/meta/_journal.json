@@ -15,6 +15,13 @@
       "when": 1794302274604,
       "tag": "0001_yellow_stepford_cuckoos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794387171007,
+      "tag": "0002_project_type",
+      "breakpoints": true
     }
   ]
 }

@@ -13,9 +13,14 @@ const slugSchema = z
 
 const nameSchema = z.string().trim().min(1).max(100);
 
-// The slug is generated from the name on the server, so clients send only the name.
+// Kept in sync with the project_type enum in db/schema/project.ts.
+export const PROJECT_TYPES = ["software", "marketing", "design", "operations", "personal"] as const;
+const typeSchema = z.enum(PROJECT_TYPES);
+
+// The slug is generated from the name on the server, so clients send only the name and type.
 export const createProjectSchema = z.object({
   name: nameSchema,
+  type: typeSchema,
 });
 
 // Renaming doesn't change the slug, so existing URLs keep working. The slug
@@ -24,6 +29,7 @@ export const updateProjectSchema = z
   .object({
     name: nameSchema,
     slug: slugSchema,
+    type: typeSchema,
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
