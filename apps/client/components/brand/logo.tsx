@@ -12,7 +12,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function LogoBadge({ className }: { className?: string }) {
   return (
-    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-white", className)}>
+    <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground", className)}>
       <LogoMark className="size-4.5" />
     </span>
   );
@@ -22,7 +22,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <div aria-label="MiniTrigger" className={cn("flex items-center gap-2", className)} role="img">
       <LogoBadge className="size-7" />
-      <span aria-hidden="true" className="text-[15px] font-semibold tracking-tight">
+      <span aria-hidden="true" className="text-base font-semibold tracking-tight">
         MiniTrigger
       </span>
     </div>

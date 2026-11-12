@@ -2,7 +2,6 @@
 
 import { type FormEvent, useState } from "react";
 
-import { CheckboxField } from "@/components/auth/checkbox-field";
 import { FormField } from "@/components/auth/form-field";
 import { FormMessage } from "@/components/auth/form-message";
 import { SubmitButton } from "@/components/auth/submit-button";
@@ -79,16 +78,6 @@ export function SignupForm({ email, onEmailChange }: SignupFormProps) {
         required
         type="password"
       />
-      <CheckboxField name="terms" required>
-        I agree to the{" "}
-        <a className="font-medium text-foreground underline decoration-input underline-offset-2 hover:decoration-foreground" href="#terms">
-          Terms
-        </a>{" "}
-        and{" "}
-        <a className="font-medium text-foreground underline decoration-input underline-offset-2 hover:decoration-foreground" href="#privacy">
-          Privacy Policy
-        </a>
-      </CheckboxField>
       <SubmitButton pending={pending}>Create account</SubmitButton>
     </form>
   );

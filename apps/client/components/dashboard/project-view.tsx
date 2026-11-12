@@ -1,115 +1,190 @@
 "use client";
 
-import { FileQuestion, ListTodo } from "lucide-react";
+import { FileQuestion, ListTodo, Settings } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect } from "react";
 
+import { CopyValue, DetailList, DetailRow, Timestamp } from "@/components/dashboard/data-display";
 import { useDashboard } from "@/components/dashboard/dashboard-provider";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { EnvironmentDot, EnvironmentSwitcher } from "@/components/dashboard/environment-switcher";
+import { PageBar, PageBody, Panel } from "@/components/dashboard/page-header";
 import { PageSkeleton } from "@/components/dashboard/page-skeleton";
 import { ProjectTypeIcon } from "@/components/dashboard/project-type-icon";
+import { useProjectEnvironments, useSelectedEnvironment } from "@/components/dashboard/use-environment";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { projectTypeMeta } from "@/lib/types";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { type Environment, type EnvironmentType, environmentTypeMeta, type Project, projectTypeMeta } from "@/lib/types";
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
-
-function DetailRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5 text-sm not-last:border-b">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 truncate text-right">{children}</dd>
-    </div>
-  );
+// Finds the project in the caller's own list, so another user's slug is
+// simply "not found" here, matching the API's 404.
+export function useCurrentProject(slug: string) {
+  const { state } = useDashboard();
+  if (state.status !== "ready") return { status: "loading" as const };
+  const project = state.projects.find((p) => p.slug === slug);
+  return project ? { status: "ready" as const, project } : { status: "missing" as const };
 }
 
-const taskColumns = ["Task", "Status", "Assignee", "Updated"];
-
 export function ProjectView({ slug }: { slug: string }) {
-  const { state } = useDashboard();
-  if (state.status !== "ready") return <PageSkeleton />;
+  const current = useCurrentProject(slug);
+  if (current.status === "loading") return <PageSkeleton />;
+  if (current.status === "missing") return <ProjectNotFound />;
+  return <ProjectDetail project={current.project} />;
+}
 
-  // Projects come from the caller's own list, so another user's slug is
-  // simply "not found" here, matching the API's 404.
-  const project = state.projects.find((p) => p.slug === slug);
-  if (!project) {
-    return (
+export function ProjectNotFound() {
+  return (
+    <>
+      <PageBar crumbs={[{ label: "Projects", href: "/dashboard" }]} title="Not found" />
       <EmptyState
         action={
           <Link className={buttonVariants({ variant: "outline" })} href="/dashboard">
             Back to projects
           </Link>
         }
-        description="It may have been deleted, or the link is wrong."
+        description="It may have been deleted, renamed to a new slug, or the link is wrong."
         icon={FileQuestion}
         title="Project not found"
       />
-    );
-  }
+    </>
+  );
+}
+
+function ProjectDetail({ project }: { project: Project }) {
+  const { signOut } = useDashboard();
+  const { state: envState, retry } = useProjectEnvironments(project.id);
+  const { selected, select } = useSelectedEnvironment();
+
+  const status = envState.status === "error" ? envState.error.status : null;
+  // A dead session signs out, as everywhere else on the dashboard.
+  useEffect(() => {
+    if (status === 401) void signOut();
+  }, [status, signOut]);
+
+  // The project was deleted (or isn't ours) since the list was loaded.
+  if (status === 404) return <ProjectNotFound />;
 
   const meta = projectTypeMeta[project.type];
+  const environments = envState.status === "ready" ? envState.environments : null;
+  const envLabel = environmentTypeMeta[selected].label;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <div className="flex items-center gap-3">
-        <ProjectTypeIcon className="size-10 rounded-lg [&_svg]:size-5" type={project.type} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="truncate text-xl font-semibold tracking-tight">{project.name}</h1>
-            <Badge variant="secondary">{meta.label}</Badge>
+    <>
+      <PageBar
+        actions={
+          <>
+            <Link
+              aria-label="Project settings"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              href={`/dashboard/${project.slug}/settings`}
+            >
+              <Settings />
+              <span className="hidden sm:inline">Settings</span>
+            </Link>
+          </>
+        }
+        badge={<Badge className="hidden sm:inline-flex" variant="secondary">{meta.label}</Badge>}
+        crumbs={[{ label: "Projects", href: "/dashboard" }]}
+        icon={<ProjectTypeIcon className="size-5 rounded-sm [&_svg]:size-3" type={project.type} />}
+        title={project.name}
+      />
+      <PageBody>
+        {/* Desktop picks the environment in the sidebar; phones, where the sidebar is a drawer, get it here. */}
+        {envState.status !== "error" && (
+          <div className="md:hidden">
+            <EnvironmentSwitcher environments={environments} onSelect={select} selected={selected} />
           </div>
-          <p className="text-sm text-muted-foreground">{meta.description}</p>
+        )}
+
+        {envState.status === "error" && status !== 401 && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm"
+            role="alert"
+          >
+            <span>
+              <span className="font-medium text-destructive">Couldn&apos;t load environments.</span>{" "}
+              {envState.error.message}
+            </span>
+            <Button onClick={retry} size="sm" variant="outline">
+              Try again
+            </Button>
+          </div>
+        )}
+
+        <div className="grid items-start gap-4 lg:grid-cols-[1fr_20rem]">
+          <Panel
+            actions={
+              <Badge variant="outline">
+                <EnvironmentDot type={selected} />
+                {envLabel}
+              </Badge>
+            }
+            title="Tasks"
+          >
+            <EmptyState
+              description={`Tasks are on the way. When they ship, the tasks you add to ${envLabel} will show up here.`}
+              icon={ListTodo}
+              title="Tasks are coming soon"
+            />
+          </Panel>
+
+          <div className="grid gap-4">
+            <Panel title="Details">
+              <DetailList>
+                <DetailRow label="Type">{meta.label}</DetailRow>
+                <DetailRow label="Slug">
+                  <CopyValue label="slug" value={project.slug} />
+                </DetailRow>
+                <DetailRow label="Project ID">
+                  <CopyValue display={`${project.id.slice(0, 8)}…`} label="project ID" value={project.id} />
+                </DetailRow>
+                <DetailRow label="Created">
+                  <Timestamp value={project.createdAt} />
+                </DetailRow>
+                <DetailRow label="Updated">
+                  <Timestamp value={project.updatedAt} />
+                </DetailRow>
+              </DetailList>
+            </Panel>
+
+            {envState.status !== "error" && <EnvironmentsPanel environments={environments} selected={selected} />}
+          </div>
         </div>
-      </div>
+      </PageBody>
+    </>
+  );
+}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[1fr_18rem]">
-        <Card className="gap-0 py-0">
-          <CardHeader className="border-b py-3">
-            <CardTitle className="text-sm">Tasks</CardTitle>
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                  {taskColumns.map((column) => (
-                    <th className="px-4 py-2 font-medium" key={column} scope="col">
-                      {column}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan={taskColumns.length}>
-                    <EmptyState
-                      description="Tasks you add to this project will show up here."
-                      icon={ListTodo}
-                      title="No tasks yet"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl>
-              <DetailRow label="Type">{meta.label}</DetailRow>
-              <DetailRow label="Slug">
-                <code className="font-mono text-xs">{project.slug}</code>
-              </DetailRow>
-              <DetailRow label="Created">{dateFormat.format(new Date(project.createdAt))}</DetailRow>
-              <DetailRow label="Updated">{dateFormat.format(new Date(project.updatedAt))}</DetailRow>
-            </dl>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+function EnvironmentsPanel({ environments, selected }: { environments: Environment[] | null; selected: EnvironmentType }) {
+  return (
+    <Panel title="Environments">
+      {!environments ? (
+        <div aria-busy="true" aria-label="Loading environments" className="grid gap-2 p-4">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+      ) : (
+        <ul className="divide-y">
+          {environments.map((env) => {
+            const envMeta = environmentTypeMeta[env.type];
+            const isCurrent = env.type === selected;
+            return (
+              <li aria-current={isCurrent ? "true" : undefined} className="flex items-start gap-3 px-4 py-3 text-sm" key={env.id}>
+                <EnvironmentDot className="mt-2" type={env.type} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 font-medium">
+                    {envMeta.label}
+                    {isCurrent && <Badge variant="secondary">Viewing</Badge>}
+                  </div>
+                  <p className="text-muted-foreground">{envMeta.description}</p>
+                </div>
+                <CopyValue display={`${env.id.slice(0, 8)}…`} label={`${envMeta.label} environment ID`} value={env.id} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
   );
 }

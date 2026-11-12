@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { useDashboard } from "@/components/dashboard/dashboard-provider";
-import { ProjectTypeIcon } from "@/components/dashboard/project-type-icon";
+import { ProjectTypePicker } from "@/components/dashboard/project-type-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,12 +18,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
-import { PROJECT_TYPES, type ProjectType, projectTypeMeta } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import type { ProjectType } from "@/lib/types";
 
-function CreateProjectForm({ onDone }: { onDone: () => void }) {
+// Used in the dialog and inline in first-run onboarding. Creating a project
+// also creates its Development and Production environments on the server.
+export function CreateProjectForm({ inDialog = false, onDone }: { inDialog?: boolean; onDone?: () => void }) {
   const router = useRouter();
+  const toast = useToast();
   const { createProject } = useDashboard();
   const [type, setType] = useState<ProjectType>("software");
   const [pending, setPending] = useState(false);
@@ -42,78 +45,65 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
     setError(null);
     try {
       const project = await createProject({ name, type });
-      onDone();
+      onDone?.();
+      toast.show({
+        tone: "success",
+        title: `${project.name} created`,
+        description: "It has a Development and a Production environment. You're viewing Development.",
+      });
       router.push(`/dashboard/${project.slug}`);
     } catch (err) {
       setError(
         err instanceof ApiError && err.code !== "VALIDATION_ERROR"
           ? err.message
-          : "Couldn't create the project. Please try again.",
+          : "Couldn't create the project. Check your connection and try again.",
       );
       setPending(false);
     }
   }
 
+  const submit = (
+    <Button disabled={pending} type="submit">
+      {pending && <LoaderCircle className="animate-spin" />}
+      {pending ? "Creating…" : "Create project"}
+    </Button>
+  );
+
   return (
-    <form className="grid gap-5" onSubmit={handleSubmit}>
+    <form className="grid gap-6" noValidate onSubmit={handleSubmit}>
       <div className="grid gap-2">
-        <Label htmlFor="project-name">Name</Label>
+        <Label htmlFor={inDialog ? "project-name" : "onboarding-project-name"}>Name</Label>
         <Input
+          aria-describedby={error ? "project-name-error" : undefined}
           aria-invalid={error ? true : undefined}
           autoComplete="off"
-          autoFocus
-          id="project-name"
+          autoFocus={inDialog}
+          id={inDialog ? "project-name" : "onboarding-project-name"}
           maxLength={100}
           name="name"
+          onChange={() => error && setError(null)}
           placeholder="e.g. Website redesign"
           required
         />
-        {error && (
-          <p className="text-sm text-destructive" role="alert">
+        {error ? (
+          <p className="text-sm text-destructive" id="project-name-error" role="alert">
             {error}
           </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">The project&apos;s URL slug is made from its name.</p>
         )}
       </div>
 
-      <fieldset className="grid gap-2">
-        <legend className="mb-2 text-sm leading-none font-medium">Type</legend>
-        <div className="grid gap-1.5">
-          {PROJECT_TYPES.map((option) => {
-            const meta = projectTypeMeta[option];
-            const checked = type === option;
-            return (
-              <label
-                className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors",
-                  "has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                  checked ? "border-primary bg-accent" : "hover:bg-accent/60",
-                )}
-                key={option}
-              >
-                <input
-                  checked={checked}
-                  className="sr-only"
-                  name="type"
-                  onChange={() => setType(option)}
-                  type="radio"
-                  value={option}
-                />
-                <ProjectTypeIcon type={option} />
-                <span className="text-sm font-medium">{meta.label}</span>
-                <span className="ml-auto truncate text-xs text-muted-foreground">{meta.description}</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+      <ProjectTypePicker name={inDialog ? "type" : "onboarding-type"} onChange={setType} value={type} />
 
-      <DialogFooter>
-        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-        <Button disabled={pending} type="submit">
-          {pending && <LoaderCircle className="animate-spin" />}
-          Create project
-        </Button>
-      </DialogFooter>
+      {inDialog ? (
+        <DialogFooter>
+          <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+          {submit}
+        </DialogFooter>
+      ) : (
+        <div className="flex justify-end">{submit}</div>
+      )}
     </form>
   );
 }
@@ -126,10 +116,10 @@ export function CreateProjectDialog() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create project</DialogTitle>
-          <DialogDescription>Projects group related tasks. You can rename it later.</DialogDescription>
+          <DialogDescription>Pick a name and a type. You can change both later in Settings.</DialogDescription>
         </DialogHeader>
         {/* Remounts on every open, so the form starts fresh */}
-        {createDialogOpen && <CreateProjectForm onDone={() => setCreateDialogOpen(false)} />}
+        {createDialogOpen && <CreateProjectForm inDialog onDone={() => setCreateDialogOpen(false)} />}
       </DialogContent>
     </Dialog>
   );

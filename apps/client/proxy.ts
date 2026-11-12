@@ -11,12 +11,13 @@ export function proxy(request: NextRequest) {
   if (pathname.startsWith("/dashboard") && !hasSession) {
     return NextResponse.redirect(new URL("/", request.url));
   }
-  if (pathname === "/" && hasSession) {
+  // Signed-in visitors skip the landing page and the auth forms.
+  if ((pathname === "/" || pathname === "/login" || pathname === "/signup") && hasSession) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/", "/dashboard/:path*"],
+  matcher: ["/", "/login", "/signup", "/dashboard/:path*"],
 };

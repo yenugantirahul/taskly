@@ -21,5 +21,6 @@ projectsRouter.get("/", projectsController.list);
 projectsRouter.get("/by-slug/:slug", validateParams(projectSlugParamSchema), projectsController.getBySlug);
 
 projectsRouter.get("/:id", validateParams(projectIdParamSchema), projectsController.getById);
+projectsRouter.get("/:id/environments", validateParams(projectIdParamSchema), projectsController.listEnvironments);
 projectsRouter.patch("/:id", validateParams(projectIdParamSchema), validate(updateProjectSchema), projectsController.update);
 projectsRouter.delete("/:id", validateParams(projectIdParamSchema), projectsController.remove);
