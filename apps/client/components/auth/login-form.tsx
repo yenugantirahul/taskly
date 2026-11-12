@@ -56,11 +56,6 @@ export function LoginForm({ email, onEmailChange }: LoginFormProps) {
         value={email}
       />
       <FormField
-        action={
-          <a className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline" href="#forgot-password">
-            Forgot password?
-          </a>
-        }
         autoComplete="current-password"
         id="login-password"
         label="Password"

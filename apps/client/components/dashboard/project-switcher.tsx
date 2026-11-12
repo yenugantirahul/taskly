@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, FolderKanban, Plus } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { useDashboard } from "@/components/dashboard/dashboard-provider";
@@ -21,66 +21,69 @@ import {
   SidebarMenuSkeleton,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { projectTypeMeta } from "@/lib/types";
 
+// Compact project picker for the sidebar's context block: one 32px row, the
+// same height as the environment row beneath it.
 export function ProjectSwitcher() {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const { slug } = useParams<{ slug?: string }>();
   const { state, setCreateDialogOpen } = useDashboard();
 
-  if (state.status !== "ready") {
-    return <SidebarMenuSkeleton className="h-12" showIcon />;
-  }
+  if (state.status !== "ready") return <SidebarMenuSkeleton showIcon />;
 
   const { projects } = state;
   const current = projects.find((project) => project.slug === slug);
+  const go = (href: string) => {
+    setOpenMobile(false);
+    router.push(href);
+  };
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" size="lg" />}>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                aria-label={current ? `Project: ${current.name}. Switch project` : "Choose a project"}
+                className="h-8 gap-2 rounded-md px-2 font-medium hover:bg-sidebar-accent data-popup-open:bg-sidebar-accent"
+                tooltip={current ? current.name : "Choose a project"}
+              />
+            }
+          >
             {current ? (
-              <ProjectTypeIcon className="size-8 rounded-lg [&_svg]:size-4" type={current.type} />
+              <ProjectTypeIcon className="size-5 rounded-sm [&_svg]:size-3" type={current.type} />
             ) : (
-              <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-dashed">
-                <Plus className="size-4" />
+              <span className="grid size-5 shrink-0 place-items-center rounded-sm border border-dashed text-muted-foreground">
+                <Plus className="size-3!" />
               </span>
             )}
-            <span className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">
-                {current?.name ?? (projects.length ? "Select a project" : "No projects")}
-              </span>
-              <span className="truncate text-xs text-muted-foreground">
-                {current ? projectTypeMeta[current.type].label : "Projects"}
-              </span>
+            <span className={current ? "flex-1 truncate" : "flex-1 truncate text-muted-foreground"}>
+              {current?.name ?? (projects.length ? "Choose a project" : "No projects yet")}
             </span>
-            <ChevronsUpDown className="ml-auto" />
+            <ChevronsUpDown className="text-muted-foreground" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-60" side={isMobile ? "bottom" : "right"} sideOffset={4}>
+          <DropdownMenuContent align="start" className="min-w-64" side={isMobile ? "bottom" : "right"} sideOffset={4}>
             {projects.length > 0 && (
               <>
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="text-xs text-muted-foreground">Projects</DropdownMenuLabel>
                   {projects.map((project) => (
-                    <DropdownMenuItem
-                      className="gap-2 p-2"
-                      key={project.id}
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push(`/dashboard/${project.slug}`);
-                      }}
-                    >
+                    <DropdownMenuItem className="gap-2 p-2" key={project.id} onClick={() => go(`/dashboard/${project.slug}`)}>
                       <ProjectTypeIcon type={project.type} />
                       <span className="min-w-0 flex-1 truncate">{project.name}</span>
-                      {project.slug === slug && <span aria-label="Current project" className="size-1.5 rounded-full bg-brand" />}
+                      {project.slug === slug && <Check aria-label="Current project" />}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </>
             )}
+            <DropdownMenuItem className="gap-2 p-2" onClick={() => go("/dashboard")}>
+              <FolderKanban className="text-muted-foreground" />
+              All projects
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="gap-2 p-2"
               onClick={() => {
@@ -88,10 +91,8 @@ export function ProjectSwitcher() {
                 setCreateDialogOpen(true);
               }}
             >
-              <span className="grid size-6 place-items-center rounded-md border bg-background">
-                <Plus className="size-3.5" />
-              </span>
-              <span className="font-medium text-muted-foreground">New project</span>
+              <Plus className="text-muted-foreground" />
+              New project
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

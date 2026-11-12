@@ -21,6 +21,11 @@ export async function getById(req: Request<{ id: string }>, res: Response) {
     res.status(200).json({ data: project });
 }
 
+export async function listEnvironments(req: Request<{ id: string }>, res: Response) {
+    const environments = await projectsService.listProjectEnvironments(ownerId(req), req.params.id);
+    res.status(200).json({ data: environments });
+}
+
 export async function getBySlug(req: Request<{ slug: string }>, res: Response) {
     const project = await projectsService.getProjectBySlug(ownerId(req), req.params.slug);
     res.status(200).json({ data: project });

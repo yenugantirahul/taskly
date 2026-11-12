@@ -3,8 +3,11 @@
 import { useRouter } from "next/navigation";
 import { createContext, type ReactNode, use, useCallback, useEffect, useMemo, useState } from "react";
 
-import { api, ApiError, post } from "@/lib/api";
+import { api, ApiError, del, patch, post } from "@/lib/api";
 import type { Project, ProjectType, User } from "@/lib/types";
+
+// Mirrors updateProjectSchema on the server: any subset of these fields.
+export type ProjectUpdate = Partial<{ name: string; slug: string; type: ProjectType }>;
 
 type LoadState =
   | { status: "loading" }
@@ -14,6 +17,8 @@ type LoadState =
 type DashboardContextValue = {
   state: LoadState;
   createProject: (input: { name: string; type: ProjectType }) => Promise<Project>;
+  updateProject: (id: string, input: ProjectUpdate) => Promise<Project>;
+  deleteProject: (id: string) => Promise<void>;
   signOut: () => Promise<void>;
   retry: () => void;
   createDialogOpen: boolean;
@@ -89,14 +94,50 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [handleError],
   );
 
+  const updateProject = useCallback(
+    async (id: string, input: ProjectUpdate) => {
+      try {
+        const project = await patch<Project>(`/projects/${id}`, input);
+        setState((prev) =>
+          prev.status === "ready"
+            ? { ...prev, projects: prev.projects.map((p) => (p.id === id ? project : p)) }
+            : prev,
+        );
+        return project;
+      } catch (err) {
+        handleError(err);
+        throw err;
+      }
+    },
+    [handleError],
+  );
+
+  const deleteProject = useCallback(
+    async (id: string) => {
+      try {
+        await del(`/projects/${id}`);
+      } catch (err) {
+        // Already gone counts as deleted; anything else is a real failure.
+        if (!(err instanceof ApiError && err.status === 404)) {
+          handleError(err);
+          throw err;
+        }
+      }
+      setState((prev) =>
+        prev.status === "ready" ? { ...prev, projects: prev.projects.filter((p) => p.id !== id) } : prev,
+      );
+    },
+    [handleError],
+  );
+
   const retry = useCallback(() => {
     setState({ status: "loading" });
     setAttempt((n) => n + 1);
   }, []);
 
   const value = useMemo(
-    () => ({ state, createProject, signOut, retry, createDialogOpen, setCreateDialogOpen }),
-    [state, createProject, signOut, retry, createDialogOpen],
+    () => ({ state, createProject, updateProject, deleteProject, signOut, retry, createDialogOpen, setCreateDialogOpen }),
+    [state, createProject, updateProject, deleteProject, signOut, retry, createDialogOpen],
   );
 
   return <DashboardContext value={value}>{children}</DashboardContext>;

@@ -6,7 +6,7 @@ export function FormMessage({ tone = "error", children }: { tone?: "error" | "su
     <p
       className={cn(
         "rounded-lg border px-3 py-2.5 text-sm",
-        tone === "error" ? "border-destructive/30 bg-destructive/5 text-destructive" : "border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300",
+        tone === "error" ? "border-destructive/30 bg-destructive/5 text-destructive" : "border-success/30 bg-success/10 text-success",
       )}
       role={tone === "error" ? "alert" : "status"}
     >

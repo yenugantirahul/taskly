@@ -1,94 +1,130 @@
 "use client";
 
-import { LayoutDashboard, ListTodo, Settings, Users } from "lucide-react";
+import { FolderKanban, LayoutDashboard, ListTodo, Settings, Users } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { type ComponentProps, Suspense } from "react";
 
+import { LogoBadge } from "@/components/brand/logo";
 import { useDashboard } from "@/components/dashboard/dashboard-provider";
+import { EnvironmentSelector } from "@/components/dashboard/environment-selector";
 import { NavUser } from "@/components/dashboard/nav-user";
 import { ProjectSwitcher } from "@/components/dashboard/project-switcher";
+import { SidebarNavLink, SidebarNavSection, SidebarNavSoon } from "@/components/dashboard/sidebar-nav";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-// Sections that don't have pages yet are listed but disabled, so the layout
-// reads like the finished product without linking to 404s.
-const upcoming = [
-  { title: "Tasks", icon: ListTodo },
-  { title: "Members", icon: Users },
-  { title: "Settings", icon: Settings },
-];
+// Layout, top to bottom:
+//   brand row (same 48px as the page header) with the collapse toggle
+//   context block: Project label, project picker, environment picker
+//   navigation: workspace links, then the current project's sections
+//   account menu
+function BrandRow() {
+  return (
+    <SidebarHeader className="h-12 flex-row items-center gap-2 border-b border-sidebar-border px-3 py-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+      <Link
+        aria-label="MiniTrigger, all projects"
+        className="flex min-w-0 flex-1 items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:hidden"
+        href="/dashboard"
+      >
+        <LogoBadge className="size-6 rounded-md [&_svg]:size-3.5" />
+        <span className="truncate text-sm font-semibold tracking-tight">MiniTrigger</span>
+      </Link>
+      <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+    </SidebarHeader>
+  );
+}
 
-function ProjectNav() {
+function useCurrentSlug() {
   const { slug } = useParams<{ slug?: string }>();
   const { state } = useDashboard();
+  if (!slug || state.status !== "ready") return { slug, project: undefined };
+  return { slug, project: state.projects.find((p) => p.slug === slug) };
+}
 
-  if (state.status !== "ready") {
-    return (
-      <SidebarMenu>
-        {Array.from({ length: 4 }, (_, i) => (
-          <SidebarMenuItem key={i}>
-            <SidebarMenuSkeleton showIcon />
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
-    );
-  }
+function ContextBlock() {
+  const { project } = useCurrentSlug();
+  return (
+    <div className="grid gap-1 border-b border-sidebar-border p-2">
+      <span className="px-2 pt-1 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">Project</span>
+      <ProjectSwitcher />
+      {project && (
+        // useSearchParams (inside) is request-time data under Cache Components
+        <Suspense fallback={<SidebarMenuSkeleton />}>
+          <EnvironmentSelector projectSlug={project.slug} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
 
-  const project = state.projects.find((p) => p.slug === slug);
-  if (!project) return null;
+function Navigation() {
+  const pathname = usePathname();
+  const { slug, project } = useCurrentSlug();
+  const { state } = useDashboard();
+  const base = project ? `/dashboard/${project.slug}` : "";
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton isActive render={<Link href={`/dashboard/${project.slug}`} />} tooltip="Overview">
-          <LayoutDashboard />
-          <span>Overview</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-      {upcoming.map(({ title, icon: Icon }) => (
-        <SidebarMenuItem key={title}>
-          <SidebarMenuButton aria-disabled className="text-sidebar-foreground/60" tooltip={`${title} (coming soon)`}>
-            <Icon />
-            <span>{title}</span>
-          </SidebarMenuButton>
-          <SidebarMenuBadge className="text-[10px] font-normal text-muted-foreground">Soon</SidebarMenuBadge>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
+    <>
+      <SidebarNavSection>
+        <SidebarNavLink active={pathname === "/dashboard"} href="/dashboard" icon={FolderKanban} label="All projects" />
+      </SidebarNavSection>
+
+      {slug && state.status !== "ready" && (
+        <SidebarNavSection title="Project">
+          {Array.from({ length: 3 }, (_, i) => (
+            <SidebarMenuItem key={i}>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+          ))}
+        </SidebarNavSection>
+      )}
+
+      {project && (
+        <>
+          <SidebarNavSection title="Project">
+            <SidebarNavLink active={pathname === base} href={base} icon={LayoutDashboard} label="Overview" />
+            <SidebarNavSoon icon={ListTodo} label="Tasks" />
+            <SidebarNavSoon icon={Users} label="Members" />
+          </SidebarNavSection>
+          <SidebarNavSection title="Configure">
+            <SidebarNavLink active={pathname === `${base}/settings`} href={`${base}/settings`} icon={Settings} label="Settings" />
+          </SidebarNavSection>
+        </>
+      )}
+    </>
   );
 }
 
 export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        {/* useParams is request-time data under Cache Components */}
-        <Suspense fallback={<SidebarMenuSkeleton className="h-12" showIcon />}>
-          <ProjectSwitcher />
+      <BrandRow />
+      {/* useParams / usePathname are request-time data under Cache Components */}
+      <Suspense fallback={<div className="h-12 border-b border-sidebar-border" />}>
+        <ContextBlock />
+      </Suspense>
+      <SidebarContent className="gap-0 py-2">
+        <Suspense
+          fallback={
+            <SidebarMenu className="p-2">
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenu>
+          }
+        >
+          <Navigation />
         </Suspense>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Project</SidebarGroupLabel>
-          <Suspense fallback={null}>
-            <ProjectNav />
-          </Suspense>
-        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border">
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

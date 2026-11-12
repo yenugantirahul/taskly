@@ -1,6 +1,7 @@
 import { pgTable, pgEnum, uuid, text, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './auth.js';
+import { environments } from './environment.js';
 
 // Kept in sync with PROJECT_TYPES in validators/project.schema.ts.
 export const projectType = pgEnum('project_type', [
@@ -35,9 +36,10 @@ export const projects = pgTable(
 );
 
 // Drizzle Relations API definition
-export const projectsRelations = relations(projects, ({ one }) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
     owner: one(users, {
         fields: [projects.ownerId],
         references: [users.id],
     }),
+    environments: many(environments),
 }));

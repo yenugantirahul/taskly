@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MiniTrigger | Make progress feel possible",
-  description: "A calmer way to organize your day and build momentum.",
+  title: "MiniTrigger | Every project you run, in one place",
+  description:
+    "Give each software, marketing, design, operations or personal project its own space, and switch between them from one sidebar.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange enableSystem>
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>

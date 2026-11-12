@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, Monitor, Moon, Sun, SunMoon } from "lucide-react";
+import { ChevronsUpDown, LoaderCircle, LogOut, Monitor, Moon, Sun, SunMoon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useState } from "react";
 
 import { useDashboard } from "@/components/dashboard/dashboard-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -37,8 +38,8 @@ function initials(nameOrEmail: string) {
 function Identity({ name, email }: { name: string; email: string }) {
   return (
     <>
-      <Avatar className="size-8 rounded-lg">
-        <AvatarFallback className="rounded-lg text-xs">{initials(name)}</AvatarFallback>
+      <Avatar className="size-7 rounded-md">
+        <AvatarFallback className="rounded-md text-xs">{initials(name)}</AvatarFallback>
       </Avatar>
       <span className="grid flex-1 text-left text-sm leading-tight">
         <span className="truncate font-medium">{name}</span>
@@ -52,6 +53,7 @@ export function NavUser() {
   const { isMobile } = useSidebar();
   const { state, signOut } = useDashboard();
   const { theme, setTheme } = useTheme();
+  const [signingOut, setSigningOut] = useState(false);
 
   if (state.status !== "ready") return <SidebarMenuSkeleton className="h-12" showIcon />;
 
@@ -62,9 +64,9 @@ export function NavUser() {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" size="lg" />}>
+          <DropdownMenuTrigger render={<SidebarMenuButton className="h-10 gap-2 rounded-md px-2 hover:bg-sidebar-accent data-popup-open:bg-sidebar-accent" />}>
             <Identity email={user.email} name={name} />
-            <ChevronsUpDown className="ml-auto" />
+            <ChevronsUpDown className="ml-auto text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-56" side={isMobile ? "bottom" : "right"} sideOffset={4}>
             <DropdownMenuGroup>
@@ -96,9 +98,17 @@ export function NavUser() {
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => void signOut()}>
-              <LogOut />
-              Log out
+            {/* Stays open while the session is revoked, so the click has visible feedback */}
+            <DropdownMenuItem
+              closeOnClick={false}
+              disabled={signingOut}
+              onClick={() => {
+                setSigningOut(true);
+                void signOut();
+              }}
+            >
+              {signingOut ? <LoaderCircle className="animate-spin" /> : <LogOut />}
+              {signingOut ? "Logging out…" : "Log out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

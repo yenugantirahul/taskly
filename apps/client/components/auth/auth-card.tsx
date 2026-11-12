@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 type AuthMode = "login" | "signup";
 
 const copy: Record<AuthMode, { title: string; description: string }> = {
-  login: { title: "Welcome back", description: "Log in to pick up where you left off." },
-  signup: { title: "Create your account", description: "Start building a routine that works for you." },
+  login: { title: "Log in", description: "Open your projects and environments." },
+  signup: { title: "Create your account", description: "We'll email you a link to verify it. Then you can create your first project." },
 };
 
 // Both panels stay mounted in one grid cell, so the card keeps the taller panel's height and never jumps.
@@ -43,14 +43,14 @@ function PanelHeader({ mode }: { mode: AuthMode }) {
   );
 }
 
-export function AuthCard() {
-  const [mode, setMode] = useState<AuthMode>("login");
+export function AuthCard({ initialMode = "login" }: { initialMode?: AuthMode }) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   // Shared so the address carries over when switching between log in and sign up
   const [email, setEmail] = useState("");
 
   return (
     <div className="w-full max-w-sm">
-      <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+      <div className="rounded-xl border bg-card p-6 text-card-foreground shadow-card">
         <Tabs onValueChange={(value) => setMode(value as AuthMode)} value={mode}>
           <TabsList className="mb-6 w-full">
             <TabsTrigger aria-controls="auth-panel-login" id="auth-tab-login" value="login">

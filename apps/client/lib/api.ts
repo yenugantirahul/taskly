@@ -45,3 +45,11 @@ export async function api<T = unknown>(path: string, init: RequestInit = {}): Pr
 export function post<T = unknown>(path: string, data?: unknown): Promise<T> {
   return api<T>(path, { method: "POST", body: data === undefined ? undefined : JSON.stringify(data) });
 }
+
+export function patch<T = unknown>(path: string, data: unknown): Promise<T> {
+  return api<T>(path, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export function del(path: string): Promise<void> {
+  return api<void>(path, { method: "DELETE" });
+}

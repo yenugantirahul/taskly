@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -35,7 +36,12 @@ export function VerifyEmail() {
   }, [state.status, token]);
 
   if (state.status === "pending") {
-    return <p className="text-sm text-muted-foreground">Verifying your email…</p>;
+    return (
+      <p aria-live="polite" className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+        <LoaderCircle className="size-4 animate-spin" />
+        Verifying your email…
+      </p>
+    );
   }
 
   return (
@@ -44,9 +50,11 @@ export function VerifyEmail() {
         {state.status === "done" ? "Email verified" : "Couldn't verify email"}
       </h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        {state.status === "done" ? "Your account is ready. Log in to get started." : state.message}
+        {state.status === "done"
+          ? "Your account is ready. Log in to create your first project."
+          : `${state.message} If your email isn't verified yet, sign up again with the same address to get a fresh link.`}
       </p>
-      <Link className={buttonVariants({ className: "mt-6 w-full" })} href="/">
+      <Link className={buttonVariants({ className: "mt-6 w-full" })} href="/login">
         {state.status === "done" ? "Continue to log in" : "Back to log in"}
       </Link>
     </div>
