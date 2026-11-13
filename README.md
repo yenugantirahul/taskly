@@ -1,5 +1,7 @@
 # Taskly
 
+Deployment: [Render Free + Neon API setup](docs/deployment.md).
+
 ## Development
 
 Install the workspace dependencies from the repository root with `pnpm install`.
@@ -16,6 +18,23 @@ client and server development scripts concurrently. Stop the apps with Ctrl+C.
 The database stays running until `pnpm deps:down`.
 
 ## Other root commands
+
+To build and run the API in Docker with PostgreSQL, Redis, and Mailpit:
+
+```sh
+docker compose --profile api up -d --build --wait
+curl http://localhost:5000/server/ping
+docker compose exec api id
+```
+
+The endpoint returns `pong`. The API runs as the non-root `node` user and connects
+to PostgreSQL at `postgres:5432` on the Compose network. Runtime environment
+variables are configured in `docker-compose.yml`; `APP_URL` and `EMAIL_FROM` can
+be overridden in the root `.env` or shell. The database credentials are for local
+development. Environment files are excluded from the image.
+
+The `api` profile keeps the container optional when using `pnpm dev`. Stop the API
+container with `docker compose stop api` before running the API on the host.
 
 - `pnpm build`: build the apps.
 - `pnpm start`: start both apps after building; the database must already be running

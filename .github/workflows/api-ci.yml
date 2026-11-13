@@ -1,0 +1,57 @@
+name: API CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: taskly
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: taskly_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taskly -d taskly_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm install --global pnpm@11.9.0
+      - run: pnpm install --filter @minitrigger/server --frozen-lockfile
+      - run: pnpm --filter @minitrigger/server typecheck
+      - run: pnpm --filter @minitrigger/server test
+      - name: Build deployable image
+        run: docker build -f apps/server/Dockerfile -t taskly-api:ci .
+      - name: Verify migrations and container
+        env:
+          DATABASE_URL: postgresql://taskly:ci-only-password@127.0.0.1:5432/taskly_ci
+        run: |
+          set -euo pipefail
+          # Apply migrations twice to check both a fresh database and a repeat run.
+          for attempt in 1 2; do
+            docker run --rm --network host -e DATABASE_URL taskly-api:ci node apps/server/dist/migrate.js
+          done
+          docker run -d --name taskly-api-ci --network host \
+            -e DATABASE_URL -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=5000 \
+            -e APP_URL=https://taskly.example -e SMTP_URL=smtp://127.0.0.1:1 \
+            -e EMAIL_FROM=ci@example.com -e MIGRATE_ON_START=true taskly-api:ci
+          trap 'docker logs taskly-api-ci; docker rm -f taskly-api-ci' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5000/server/ready; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:5000/server/ready
+          test "$(curl --fail --silent http://127.0.0.1:5000/server/ping)" = pong
+          test "$(docker exec taskly-api-ci id -u)" != 0
