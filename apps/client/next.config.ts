@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 // Where the Express API listens. Browser calls go to same-origin /api/* and
 // are proxied there, so the HttpOnly session cookie stays first-party and the
 // API never needs CORS.
-const API_URL = process.env.API_URL ?? "http://localhost:5000";
+if (process.env.VERCEL && !process.env.API_URL) {
+  throw new Error("Set API_URL to the Render API origin in Vercel before building.");
+}
+const API_URL = (process.env.API_URL ?? "http://localhost:5000").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   /* config options here */
