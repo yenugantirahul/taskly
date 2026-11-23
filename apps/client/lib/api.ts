@@ -7,6 +7,7 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     message: string,
+    public details?: unknown,
   ) {
     super(message);
   }
@@ -37,6 +38,7 @@ export async function api<T = unknown>(path: string, init: RequestInit = {}): Pr
       response.status,
       body?.error?.code ?? "UNKNOWN_ERROR",
       body?.error?.message ?? "Something went wrong. Please try again.",
+      body?.error?.details,
     );
   }
   return body?.data as T;

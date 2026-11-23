@@ -26,13 +26,16 @@ export function SignupForm({ email, onEmailChange }: SignupFormProps) {
     setPending(true);
     setError(null);
     try {
-      await post("/auth/register", { name: form.get("name"), email, password: form.get("password") });
-      setSentTo(email);
+      const normalizedEmail = email.trim();
+      await post("/auth/register", {
+        name: form.get("name"),
+        email: normalizedEmail,
+        password: form.get("password"),
+      });
+      setSentTo(normalizedEmail);
       formElement.reset();
     } catch (err) {
-      setError(err instanceof ApiError && err.code !== "VALIDATION_ERROR"
-        ? err.message
-        : "Please check your details and try again.");
+      setError(getSignupError(err));
     } finally {
       setPending(false);
     }
@@ -81,4 +84,22 @@ export function SignupForm({ email, onEmailChange }: SignupFormProps) {
       <SubmitButton pending={pending}>Create account</SubmitButton>
     </form>
   );
+}
+
+function getSignupError(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "Couldn't create your account. Check your connection and try again.";
+  }
+  if (error.code !== "VALIDATION_ERROR") return error.message;
+
+  const issue = Array.isArray(error.details) ? error.details[0] : null;
+  const field =
+    issue && typeof issue === "object" && Array.isArray(issue.path)
+      ? issue.path[0]
+      : null;
+
+  if (field === "name") return "Enter your full name.";
+  if (field === "email") return "Enter a valid email address, such as you@company.com.";
+  if (field === "password") return "Password must be between 8 and 128 characters.";
+  return "Please check your details and try again.";
 }

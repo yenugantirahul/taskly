@@ -37,6 +37,17 @@ export type Environment = {
   createdAt: string;
 };
 
+export type ApiKey = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  revokedAt: string | null;
+};
+
+// Returned only by POST /api-keys. The complete key is never available again.
+export type CreatedApiKey = ApiKey & { key: string };
+
 export function isEnvironmentType(value: unknown): value is EnvironmentType {
   return (ENVIRONMENT_TYPES as readonly unknown[]).includes(value);
 }

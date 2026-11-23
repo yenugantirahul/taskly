@@ -4,6 +4,7 @@ import { FileQuestion, ListTodo, Settings } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { ApiKeysPanel } from "@/components/dashboard/api-keys-panel";
 import { CopyValue, DetailList, DetailRow, Timestamp } from "@/components/dashboard/data-display";
 import { useDashboard } from "@/components/dashboard/dashboard-provider";
 import { EmptyState } from "@/components/dashboard/empty-state";
@@ -67,6 +68,7 @@ function ProjectDetail({ project }: { project: Project }) {
 
   const meta = projectTypeMeta[project.type];
   const environments = envState.status === "ready" ? envState.environments : null;
+  const currentEnvironment = environments?.find((environment) => environment.type === selected) ?? null;
   const envLabel = environmentTypeMeta[selected].label;
 
   return (
@@ -110,6 +112,10 @@ function ProjectDetail({ project }: { project: Project }) {
               Try again
             </Button>
           </div>
+        )}
+
+        {envState.status !== "error" && (
+          <ApiKeysPanel environment={currentEnvironment} projectId={project.id} />
         )}
 
         <div className="grid items-start gap-4 lg:grid-cols-[1fr_20rem]">
