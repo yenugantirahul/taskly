@@ -5,6 +5,7 @@ import { projectsRouter } from "./routes/projects.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { verifyOrigin } from "./middlewares/verifyOrigin.js";
 import { checkDbConnection } from "./db/index.js";
+import { developerRouter } from "./routes/developer.routes.js";
 export async function createApp(): Promise<Express> {
   const app = express();
 
@@ -31,6 +32,7 @@ export async function createApp(): Promise<Express> {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/developer", developerRouter);
   app.use("/api/projects", projectsRouter);
 
   app.use(errorHandler);
