@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
+import { AppError } from "../utils/AppError.js";
 
 const transporter = env.SMTP_URL ? nodemailer.createTransport(env.SMTP_URL) : null;
 
@@ -26,7 +27,9 @@ export async function sendVerificationEmail(to: string, token: string) {
         if (!response.ok) {
             // Provider responses can contain recipient information; keep them out of logs.
             await response.body?.cancel();
-            throw new Error(`Email delivery failed (HTTP ${response.status})`);
+            console.error(`Email delivery failed (HTTP ${response.status})`);
+            throw new AppError(503, "VERIFICATION_EMAIL_UNAVAILABLE",
+                "We couldn't send your verification email. Try again from the login page, or contact support if this continues.");
         }
         await response.body?.cancel();
         return;

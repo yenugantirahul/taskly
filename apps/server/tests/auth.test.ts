@@ -14,12 +14,15 @@ Object.assign(process.env, {
   EMAIL_FROM: "test@example.com",
 });
 
+test.after(async () => {
+  const { closeDbConnection } = await import("../src/db/index.js");
+  await closeDbConnection();
+});
+
 test("POST /api/auth/login rejects an invalid email", { timeout: 10_000 }, async (t) => {
   // Arrange: create the real app and start a temporary local HTTP server.
   // Import after setting the environment because the app reads it on import.
   const { createApp } = await import("../src/app.js");
-  const { closeDbConnection } = await import("../src/db/index.js");
-  t.after(closeDbConnection);
 
   const app = await createApp();
   const server = app.listen(0, "127.0.0.1"); // 0 lets the OS pick a free port.
@@ -48,4 +51,33 @@ test("POST /api/auth/login rejects an invalid email", { timeout: 10_000 }, async
     issue.path.includes("email"),
   ));
   assert.equal(response.headers.get("set-cookie"), null);
+});
+
+test("POST /api/auth/resend-verification validates credentials before querying", { timeout: 10_000 }, async (t) => {
+  const { createApp } = await import("../src/app.js");
+  const { pool } = await import("../src/db/index.js");
+
+  const query = t.mock.method(pool, "query", async () => {
+    throw new Error("unexpected database query");
+  });
+
+  const app = await createApp();
+  const server = app.listen(0, "127.0.0.1");
+  t.after(() => new Promise<void>((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+    server.closeAllConnections();
+  }));
+  await once(server, "listening");
+
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const response = await fetch(`http://127.0.0.1:${address.port}/api/auth/resend-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "not-an-email", password: "password123" }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error.code, "VALIDATION_ERROR");
+  assert.equal(query.mock.callCount(), 0);
 });

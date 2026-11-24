@@ -52,7 +52,7 @@ export function VerifyEmail() {
       <p className="mt-1.5 text-sm text-muted-foreground">
         {state.status === "done"
           ? "Your account is ready. Log in to create your first project."
-          : `${state.message} If your email isn't verified yet, sign up again with the same address to get a fresh link.`}
+          : `${state.message} Log in with your email and password to request a fresh link.`}
       </p>
       <Link className={buttonVariants({ className: "mt-6 w-full" })} href="/login">
         {state.status === "done" ? "Continue to log in" : "Back to log in"}

@@ -12,9 +12,15 @@ export const loginSchema = z.object({
   remember: z.boolean().default(false),
 });
 
+export const resendVerificationSchema = loginSchema.pick({
+  email: true,
+  password: true,
+});
+
 export const verifyEmailSchema = z.object({
   token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid token"),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerschema>;
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;

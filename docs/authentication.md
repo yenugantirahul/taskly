@@ -100,6 +100,8 @@ sequenceDiagram
 
 `POST /api/auth/login` validates input, finds the user by case-insensitive email together with their password credentials, and calls `verify(storedHash, input.password)`. An unknown email, missing credentials, a wrong password and an inactive account all return the same `401 INVALID_CREDENTIALS`; an unknown email is still checked against a dummy Argon2 hash so response timing does not reveal which emails are registered. Only after the password is proven correct does an unverified account get `403 EMAIL_NOT_VERIFIED`.
 
+After `EMAIL_NOT_VERIFIED`, the login form offers to send a fresh link. `POST /api/auth/resend-verification` checks the password, issues a 24-hour token and returns `204` when the email provider accepts the message. Previously issued links can still verify the pending account until they expire. A provider rejection returns `503 VERIFICATION_EMAIL_UNAVAILABLE`.
+
 After a valid password, `createSession(user.id, userAgent)` generates a fresh token and inserts its SHA-256 hash, the request User-Agent, and a seven-day expiry. The service returns `{ user: { id, name, email }, session: { token, expiresAt } }` to the controller.
 
 Both session and verification tokens use 32 random bytes encoded as base64url. Only their SHA-256 hashes are stored in the database; raw tokens go to the browser or verification email. Password hashes use Argon2 separately.

@@ -26,6 +26,11 @@ export async function verifyEmail(req: Request, res: Response) {
   res.status(200).json({ message: "Email verified. You can now sign in." });
 }
 
+export async function resendVerification(req: Request, res: Response) {
+  await authService.resendVerificationEmail(req.body);
+  res.status(204).end();
+}
+
 export async function login(req: Request, res: Response) {
   const { user, session } = await authService.login(req.body, {
     userAgent: req.get("user-agent"),

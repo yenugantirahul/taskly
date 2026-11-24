@@ -2,10 +2,14 @@ import { db } from "../db/index.js";
 import { users, passwordCredentials, emailVerificationTokens } from "../db/schema/index.js";
 import { AppError } from "../utils/AppError.js";
 import { generateToken, hashToken } from "../utils/Auth.js";
-import { LoginInput, RegisterInput } from "../validators/auth.schema.js";
+import type {
+  LoginInput,
+  RegisterInput,
+  ResendVerificationInput,
+} from "../validators/auth.schema.js";
 import { hash } from "@node-rs/argon2"; // or bcrypt
 import { sendVerificationEmail } from "./email.service.js";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { RegisterResult } from "../types/auth.types.js";
 import { verify } from "@node-rs/argon2";
 import { createSession, revokeSession } from "./session.service.js";
@@ -145,6 +149,26 @@ export async function verifyEmail(token: string): Promise<void> {
   });
 }
 
+async function issueVerificationToken(userId: string, email: string): Promise<string> {
+  const token = generateToken();
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(emailVerificationTokens)
+      // A delivery failure must leave previously emailed, unexpired links usable.
+      .where(and(eq(emailVerificationTokens.userId, userId), lte(emailVerificationTokens.expiresAt, new Date())));
+
+    await tx.insert(emailVerificationTokens).values({
+      userId,
+      email,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+    });
+  });
+
+  return token;
+}
+
 
 
 // Hash compared against when the email is unknown, so a missing account takes
@@ -160,7 +184,7 @@ function invalidCredentials(): AppError {
   return new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password");
 }
 
-export async function login(input: LoginInput, meta: { userAgent?: string } = {}) {
+async function authenticatePassword(input: ResendVerificationInput) {
   const [account] = await db
     .select({
       id: users.id,
@@ -186,6 +210,23 @@ export async function login(input: LoginInput, meta: { userAgent?: string } = {}
   if (!account || !passwordOk || !account.isActive) {
     throw invalidCredentials();
   }
+
+  return account;
+}
+
+export async function resendVerificationEmail(input: ResendVerificationInput): Promise<void> {
+  const account = await authenticatePassword(input);
+
+  if (account.emailVerifiedAt) {
+    throw new AppError(409, "EMAIL_ALREADY_VERIFIED", "Email is already verified. You can sign in.");
+  }
+
+  const token = await issueVerificationToken(account.id, account.email);
+  await sendVerificationEmail(account.email, token);
+}
+
+export async function login(input: LoginInput, meta: { userAgent?: string } = {}) {
+  const account = await authenticatePassword(input);
 
   // Only reveal verification status once the password is proven correct.
   if (!account.emailVerifiedAt) {

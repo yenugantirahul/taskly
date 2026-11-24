@@ -34,7 +34,12 @@ test("origin check and logout", { timeout: 15_000 }, async (t) => {
   const base = `http://127.0.0.1:${address.port}/api`;
 
   await t.test("rejects state-changing requests from another origin", async () => {
-    for (const [method, path] of [["POST", "/projects"], ["DELETE", `/projects/${crypto.randomUUID()}`], ["POST", "/auth/login"]]) {
+    for (const [method, path] of [
+      ["POST", "/projects"],
+      ["DELETE", `/projects/${crypto.randomUUID()}`],
+      ["POST", "/auth/login"],
+      ["POST", "/auth/resend-verification"],
+    ]) {
       const response = await fetch(base + path, {
         method,
         headers: { Origin: "https://evil.example", "Content-Type": "application/json", Cookie: `session=${"a".repeat(43)}` },

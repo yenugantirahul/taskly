@@ -29,6 +29,6 @@ test("verification email rejects provider failures without exposing the response
   const { sendVerificationEmail } = await import("../src/services/email.service.js");
   t.mock.method(globalThis, "fetch", async () => new Response("private provider details", { status: 403 }));
   await assert.rejects(sendVerificationEmail("owner@example.com", "test"), {
-    message: "Email delivery failed (HTTP 403)",
+    statusCode: 503, code: "VERIFICATION_EMAIL_UNAVAILABLE",
   });
 });
