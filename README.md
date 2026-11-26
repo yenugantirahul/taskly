@@ -5,9 +5,19 @@ Deployment: [Render Free + Neon API setup](docs/deployment.md).
 ## Development
 
 Install the workspace dependencies from the repository root with `pnpm install`.
-Configure `apps/server/.env` using `apps/server/.env.example`.
+Configure `apps/server/.env` using `apps/server/.env.example`. Set
+`RESEND_API_KEY` to a Resend sending key. To test with the default
+`EMAIL_FROM`, sign up with the email address on your Resend account. To send
+to other addresses, use a sender on a verified Resend domain.
 
-With Docker running, start the database and both apps with:
+With Docker running, start the database and apply migrations before the first run:
+
+```sh
+pnpm deps:up
+pnpm --filter @minitrigger/server db:migrate
+```
+
+Start the database and both apps with:
 
 ```sh
 pnpm dev
@@ -19,7 +29,8 @@ The database stays running until `pnpm deps:down`.
 
 ## Other root commands
 
-To build and run the API in Docker with PostgreSQL, Redis, and Mailpit:
+To build and run the API in Docker with PostgreSQL and Redis, supply
+`RESEND_API_KEY` in the root `.env` or shell, then run:
 
 ```sh
 docker compose --profile api up -d --build --wait

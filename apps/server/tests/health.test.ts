@@ -5,7 +5,7 @@ import test from "node:test";
 Object.assign(process.env, {
   NODE_ENV: "test", HOST: "127.0.0.1", PORT: "5000",
   DATABASE_URL: "postgresql://test:test@127.0.0.1:1/taskly_test",
-  APP_URL: "http://localhost:3000", SMTP_URL: "smtp://127.0.0.1:1",
+  APP_URL: "http://localhost:3000", RESEND_API_KEY: "re_test_only",
   EMAIL_FROM: "test@example.com",
 });
 

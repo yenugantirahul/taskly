@@ -33,7 +33,7 @@ origin for API smoke tests. Verification links require the frontend's
 `/verify-email` page, so update `APP_URL` before testing a complete signup flow.
 
 The Blueprint sets `HOST=0.0.0.0`, `PORT=10000`, `NODE_ENV=production`, and
-`MIGRATE_ON_START=true`. Leave `SMTP_URL` and `REDIS_URL` unset. Render builds from
+`MIGRATE_ON_START=true`. Leave `REDIS_URL` unset. Render builds from
 the repository root using `apps/server/Dockerfile` and supplies HTTPS. Subsequent
 automatic deployments wait for the GitHub CI checks to pass.
 

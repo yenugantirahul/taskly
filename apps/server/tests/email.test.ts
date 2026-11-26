@@ -7,7 +7,6 @@ Object.assign(process.env, {
   APP_URL: "https://taskly.example", RESEND_API_KEY: "re_test_only",
   EMAIL_FROM: "Taskly <onboarding@resend.dev>",
 });
-delete process.env.SMTP_URL;
 
 test("verification email uses HTTPS and encodes the verification token", async (t) => {
   const { sendVerificationEmail } = await import("../src/services/email.service.js");

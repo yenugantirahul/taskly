@@ -7,7 +7,7 @@ Object.assign(process.env, {
   PORT: "5000",
   DATABASE_URL: "postgresql://test:test@127.0.0.1:1/taskly_test",
   APP_URL: "http://localhost:3000",
-  SMTP_URL: "smtp://127.0.0.1:1",
+  RESEND_API_KEY: "re_test_only",
   EMAIL_FROM: "test@example.com",
 });
 

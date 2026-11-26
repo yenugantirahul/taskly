@@ -45,7 +45,7 @@ jobs:
           done
           docker run -d --name taskly-api-ci --network host \
             -e DATABASE_URL -e NODE_ENV=production -e HOST=0.0.0.0 -e PORT=5000 \
-            -e APP_URL=https://taskly.example -e SMTP_URL=smtp://127.0.0.1:1 \
+            -e APP_URL=https://taskly.example -e RESEND_API_KEY=re_test_only \
             -e EMAIL_FROM=ci@example.com -e MIGRATE_ON_START=true taskly-api:ci
           trap 'docker logs taskly-api-ci; docker rm -f taskly-api-ci' EXIT
           for attempt in $(seq 1 30); do

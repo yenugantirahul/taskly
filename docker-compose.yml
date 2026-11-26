@@ -13,15 +13,13 @@ services:
       PORT: 5000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/minitrigger
       APP_URL: ${APP_URL:-http://localhost:3000}
-      SMTP_URL: smtp://mailpit:1025
-      EMAIL_FROM: ${EMAIL_FROM:-Taskly <noreply@localhost>}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Taskly <onboarding@resend.dev>}
       REDIS_URL: redis://redis:6379
     ports:
       - "127.0.0.1:5000:5000"
     depends_on:
       postgres:
-        condition: service_healthy
-      mailpit:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -46,19 +44,6 @@ services:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d minitrigger"]
-      interval: 2s
-      timeout: 3s
-      retries: 15
-
-  mailpit:
-    image: axllent/mailpit:v1.27
-    container_name: minitrigger-mail
-    restart: unless-stopped
-    ports:
-      - "1025:1025" # SMTP (SMTP_URL in apps/server/.env)
-      - "8025:8025" # Web UI: http://localhost:8025
-    healthcheck:
-      test: ["CMD", "/mailpit", "readyz"]
       interval: 2s
       timeout: 3s
       retries: 15
